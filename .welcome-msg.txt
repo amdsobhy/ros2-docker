@@ -1,0 +1,22 @@
+
+******************************************************************
+*
+*     Welcome to QNX ROS2 ${ROS2DIST} development environment
+*     -------------------------------------------------------
+*
+* Export STDLIB to either libstdc++ or libc++
+*
+* Export CPU to x86_64 or aarch64to build for a specific architecture
+*
+* Unset CPU to build for all architectures
+*
+* To build ROS2 do the following:
+*
+*   1- Export the variables above
+*   2- cd ros2_${ROS2DIST}/qnx_deps
+*   3- ./build-deps.sh
+*   4- cd ros2_${ROS2DIST}
+*   5- ./colcon-ignore.sh
+*   6- ./build-ros2.sh
+*
+******************************************************************
