@@ -1,9 +1,9 @@
 #Download base image ubuntu 18.04
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 # LABEL about the custom image
 LABEL maintainer="asobhy@blackberry.com"
-LABEL version="0.2.3"
+LABEL version="0.2.4"
 LABEL description="Docker image for building ROS2 for QNX."
 
 # Disable Prompt During Packages Installation
@@ -19,82 +19,60 @@ RUN locale-gen en_US en_US.UTF-8 && \
 	update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && \
 	export LANG=en_US.UTF-8
 
+#Add ROS2 apt repository
+RUN apt update && apt install -y curl gnupg2 lsb-release && \
+	curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
+	sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
+
 # Build tools needed for building dependencies
-RUN apt install -y \
+RUN apt update && apt install -y \
 	build-essential \
+	cmake \
+  	git \
+  	libbullet-dev \
+  	python3-colcon-common-extensions \
+  	python3-flake8 \
+	python3-pip \
+	python3-pytest-cov \
+	python3-rosdep \
+	python3-setuptools \
+	python3-vcstool \
+	wget \
 	bc \
 	subversion \
 	autoconf \
 	libtool-bin \
 	libssl-dev \
 	zlib1g-dev \
-	wget \
-	git \
 	rsync \
-	rename \
-	libsqlite3-dev \
-	sqlite3 \
-	bzip2 \
-	libbz2-dev \
-	zlib1g-dev \
-	openssl \
-	libgdbm-dev \
-	libgdbm-compat-dev \
-	liblzma-dev \
-	libreadline-dev \
-	libncursesw5-dev \
-	libffi-dev \
-	uuid-dev
-
-# Install cmake 3.18
-RUN cd /opt && \
-	wget https://cmake.org/files/v3.18/cmake-3.18.0-Linux-x86_64.sh && \
-	yes | sh cmake-3.18.0-Linux-x86_64.sh --prefix=/opt && \
-	ln -s /opt/cmake-3.18.0-Linux-x86_64/bin/cmake /usr/local/bin/cmake
-
-# Install Python3.8.0. Building from source since no binary package for this specific version was found.
-RUN cd /tmp && \
-	wget https://www.python.org/ftp/python/3.8.0/Python-3.8.0.tgz && \
-	tar -xf Python-3.8.0.tgz && \
-	cd Python-3.8.0 && \
-	./configure --enable-optimizations --prefix=/usr && \
-	make -j$(nproc) && \
-	make altinstall && \
-	ln -s /usr/bin/python3.8 /usr/bin/python3 && \
-	ln -s /usr/bin/python3.8 /usr/bin/python && \
-	rm -r /tmp/Python-3.8.0 && \
-	rm  /tmp/Python-3.8.0.tgz
+	rename
 
 # Install standard ROS 2 development tools
 # Install pip packages needed for testing
 # Needed to build numpy from source
-RUN pip3.8 install \
-  	colcon-common-extensions \
-  	flake8 \
-  	pytest-cov \
-  	rosdep \
-  	setuptools \
-  	vcstool \
-	lark-parser \
+RUN python3 -m pip install -U \
+	argcomplete \
+	flake8-blind-except \
+	flake8-builtins \
+	flake8-class-newline \
+	flake8-comprehensions \
+	flake8-deprecated \
+	flake8-docstrings \
+	flake8-import-order \
+	flake8-quotes \
+	pytest-repeat \
+	pytest-rerunfailures \
+	pytest \
+	setuptools \
+	importlib-metadata \
+	importlib-resources \
+	Cython \
 	numpy \
-  	argcomplete \
-  	flake8-blind-except \
-  	flake8-builtins \
-  	flake8-class-newline \
-  	flake8-comprehensions \
-  	flake8-deprecated \
-  	flake8-docstrings \
-  	flake8-import-order \
-  	flake8-quotes \
-  	pytest-repeat \
-  	pytest-rerunfailures \
-  	pytest \
-  	setuptools \
-  	importlib-metadata \
-  	importlib-resources \
-	Cython
+	lark-parser
 
-WORKDIR /root
+#making build workspace
+RUN mkdir -p /builds/workspace
+WORKDIR /builds/workspace
 
 # Get ROS 2 code
 RUN	mkdir -p ros2_${ROS2DIST}/src && \
@@ -106,31 +84,39 @@ RUN	mkdir -p ros2_${ROS2DIST}/src && \
 # QNX SDP7.1 should be installed on system before creating an image
 # QNX SDP7.1 directory should be named qnx710
 # ~/qnx710 directory will have to be copied over to the build context directory
-COPY qnx710 /root/qnx710
+COPY qnx710 /builds/workspace/qnx710
+RUN sed -i 's+$HOME+/builds/workspace+' /builds/workspace/qnx710/qnxsdp-env.sh
 
 # Setup host for Cross-compiling for QNX
 RUN cd ros2_${ROS2DIST} && \
 	git clone https://gitlab.com/qnx/ros2/ros2_qnx.git /tmp/ros2 && \
 	rsync -haz /tmp/ros2/* . && \
-	rm -rf /tmp/ros2 && \
-	./create-stage.sh
+	rm -rf /tmp/ros2
 
-RUN cd ros2_${ROS2DIST}/qnx_deps && \
-	mkdir src && \
-	vcs import src < qnx_deps.repos
+#Import QNX dependencies repositories
+RUN cd ros2_${ROS2DIST} && \
+	mkdir -p src/qnx_deps && \
+	vcs import src/qnx_deps < qnx_deps.repos
 
-WORKDIR /root
+RUN cd ros2_${ROS2DIST} && \
+	./check_deps.py --path=src && \
+	./colcon-ignore.sh
 
-RUN cp qnx710/qnxsdp-env.sh qnx710/qnxsdp-env-ros2.sh && \
-	echo "\nQNX_STAGE=$HOME/ros2_${ROS2DIST}/qnx_stage/target/qnx7\nQCONF_OVERRIDE=$HOME/qnx710/qconf-override.mk\n\nexport QNX_STAGE QCONF_OVERRIDE\n\necho QNX_STAGE=\$QNX_STAGE\necho QCONF_OVERRIDE=\$QCONF_OVERRIDE" >> qnx710/qnxsdp-env-ros2.sh
+WORKDIR /builds/workspace
 
-RUN echo "INSTALL_ROOT_nto := \$(QNX_STAGE)\nUSE_INSTALL_ROOT = 1" > qnx710/qconf-override.mk
+#adding user
+RUN apt update && \
+    apt install -y sudo
+RUN useradd -m builder && echo "builder:builder" | chpasswd && adduser builder sudo
+RUN chown -R builder:builder /builds
+USER builder
+CMD /bin/bash
 
 # Welcome Message
-COPY .welcome-msg.txt /root/
-RUN echo "cat /root/.welcome-msg.txt\n" >> /root/.bashrc
+COPY .welcome-msg.txt /builds/workspace
+RUN echo "cat /builds/workspace/.welcome-msg.txt\n" >> /home/builder/.bashrc
 
 # Setup environment variables
-RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /root/.bashrc
-RUN echo ". /root/qnx710/qnxsdp-env-ros2.sh" >> /root/.bashrc
-RUN echo "echo \"\n\"" >> /root/.bashrc
+RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/builder/.bashrc
+RUN echo ". /builds/workspace/qnx710/qnxsdp-env.sh" >> /home/builder/.bashrc
+RUN echo "echo \"\n\"" >> /home/builder/.bashrc
