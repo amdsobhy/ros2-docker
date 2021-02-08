@@ -27,7 +27,6 @@ RUN apt update && apt install -y curl gnupg2 lsb-release && \
 # Build tools needed for building dependencies
 RUN apt update && apt install -y \
 	build-essential \
-	cmake \
   	git \
   	libbullet-dev \
   	python3-colcon-common-extensions \
@@ -70,9 +69,17 @@ RUN python3 -m pip install -U \
 	numpy \
 	lark-parser
 
-#making build workspace
-RUN mkdir -p /builds/workspace
-WORKDIR /builds/workspace
+#Install CMake 3.18
+RUN cd /opt && sudo wget https://cmake.org/files/v3.18/cmake-3.18.0-Linux-x86_64.sh && \
+	sudo mkdir /opt/cmake-3.18.0-Linux-x86_64 && \
+	yes | sudo sh cmake-3.18.0-Linux-x86_64.sh --prefix=/opt/cmake-3.18.0-Linux-x86_64 --skip-license && \
+	sudo ln -s /opt/cmake-3.18.0-Linux-x86_64/bin/cmake /usr/local/bin/cmake
+
+#adding user
+RUN apt update && \
+    apt install -y sudo
+RUN useradd -m builder && echo "builder:builder" | chpasswd && adduser builder sudo
+WORKDIR /home/builder
 
 # Get ROS 2 code
 RUN	mkdir -p ros2_${ROS2DIST}/src && \
@@ -84,8 +91,7 @@ RUN	mkdir -p ros2_${ROS2DIST}/src && \
 # QNX SDP7.1 should be installed on system before creating an image
 # QNX SDP7.1 directory should be named qnx710
 # ~/qnx710 directory will have to be copied over to the build context directory
-COPY qnx710 /builds/workspace/qnx710
-RUN sed -i 's+$HOME+/builds/workspace+' /builds/workspace/qnx710/qnxsdp-env.sh
+COPY qnx710 /home/builder/qnx710
 
 # Setup host for Cross-compiling for QNX
 RUN cd ros2_${ROS2DIST} && \
@@ -102,21 +108,18 @@ RUN cd ros2_${ROS2DIST} && \
 	./check_deps.py --path=src && \
 	./colcon-ignore.sh
 
-WORKDIR /builds/workspace
+WORKDIR /home/builder
 
-#adding user
-RUN apt update && \
-    apt install -y sudo
-RUN useradd -m builder && echo "builder:builder" | chpasswd && adduser builder sudo
-RUN chown -R builder:builder /builds
+#change user
+RUN chown -R builder:builder /home/builder
 USER builder
 CMD /bin/bash
 
 # Welcome Message
-COPY .welcome-msg.txt /builds/workspace
-RUN echo "cat /builds/workspace/.welcome-msg.txt\n" >> /home/builder/.bashrc
+COPY .welcome-msg.txt /home/builder
+RUN echo "cat /home/builder/.welcome-msg.txt\n" >> /home/builder/.bashrc
 
 # Setup environment variables
 RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/builder/.bashrc
-RUN echo ". /builds/workspace/qnx710/qnxsdp-env.sh" >> /home/builder/.bashrc
+RUN echo ". /home/builder/qnx710/qnxsdp-env.sh" >> /home/builder/.bashrc
 RUN echo "echo \"\n\"" >> /home/builder/.bashrc
