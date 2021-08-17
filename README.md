@@ -10,8 +10,8 @@ Steps:
 
 3- run the script:
 
-./docker-build-qnxros2-image.sh <ros2-distro>
+./docker-build-qnxros2-image.sh ros2-distro
 
-where <ros2-distro> is for example "foxy"
+where ros2-distro is for example "foxy"
 
 4- After done and you run a container from the image, please follow the rest of the instructions displayed in the welcome message.

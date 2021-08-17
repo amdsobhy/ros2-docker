@@ -95,7 +95,8 @@ COPY qnx710 /home/builder/qnx710
 
 # Setup host for Cross-compiling for QNX
 RUN cd ros2_${ROS2DIST} && \
-	git clone https://gitlab.com/qnx/ros2/ros2_qnx.git /tmp/ros2 && \
+        if [ "${ROS2DIST}" = "rolling" ] ; then BRANCH=master ; else BRANCH=${ROS2DIST} ; fi && \
+	git clone -b ${BRANCH} https://gitlab.com/qnx/ros2/ros2_qnx.git /tmp/ros2 && \
 	rsync -haz /tmp/ros2/* . && \
 	rm -rf /tmp/ros2
 
@@ -105,7 +106,7 @@ RUN cd ros2_${ROS2DIST} && \
 	vcs import src/qnx_deps < qnx_deps.repos
 
 RUN cd ros2_${ROS2DIST} && \
-	./check_deps.py --path=src && \
+	./patch-pkgxml.py --path=src && \
 	./colcon-ignore.sh
 
 WORKDIR /home/builder
