@@ -1,17 +1,26 @@
-# ros-dockerfiles
+# ROS2 QNX Dockerfiles
 
 This repository contain the files needed to generate a docker image for building ROS2 for QNX.
+A more in-depth guide can be found on our [readthedocs page](https://ros2-qnx-documentation.readthedocs.io).
 
-Steps:
+## Steps:
 
-1- Clone the repo locally
+1- Clone the repository locally.
 
-2- rsync SDP7.1 directory into cloned directory
+2- Run rsync to copy the QNX 7.1 SDP directory into the git repository directory.
 
-3- run the script:
+3- Run the build script as follows.
 
-./docker-build-qnxros2-image.sh ros2-distro
+```
+./docker-build-qnxros2-image.sh [ROS2_DISTRO]
+```
 
-where ros2-distro is for example "foxy"
+For example, `[ROS2_Distro]` can be `foxy`.
 
-4- After done and you run a container from the image, please follow the rest of the instructions displayed in the welcome message.
+4- Create a container with the run script as follows.
+
+```
+./docker-container-run.sh [ROS2_DISTRO]
+```
+
+5- Follow the rest of the instructions displayed in the welcome message.

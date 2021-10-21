@@ -19,7 +19,7 @@ RUN locale-gen en_US en_US.UTF-8 && \
 	update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && \
 	export LANG=en_US.UTF-8
 
-#Add ROS2 apt repository
+# Add ROS2 apt repository
 RUN apt update && apt install -y curl gnupg2 lsb-release && \
 	curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
 	sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
@@ -69,17 +69,22 @@ RUN python3 -m pip install -U \
 	numpy \
 	lark-parser
 
-#Install CMake 3.18
+# Install CMake 3.18
 RUN cd /opt && sudo wget https://cmake.org/files/v3.18/cmake-3.18.0-Linux-x86_64.sh && \
 	sudo mkdir /opt/cmake-3.18.0-Linux-x86_64 && \
 	yes | sudo sh cmake-3.18.0-Linux-x86_64.sh --prefix=/opt/cmake-3.18.0-Linux-x86_64 --skip-license && \
 	sudo ln -s /opt/cmake-3.18.0-Linux-x86_64/bin/cmake /usr/local/bin/cmake
 
-#adding user
-RUN apt update && \
-    apt install -y sudo
-RUN useradd -m builder && echo "builder:builder" | chpasswd && adduser builder sudo
-WORKDIR /home/builder
+# Adding user
+ARG USER_NAME
+ARG GROUP_NAME
+ARG USER_ID
+ARG GROUP_ID
+
+RUN groupadd --gid ${GROUP_ID} ${GROUP_NAME}
+RUN useradd --uid ${USER_ID} --gid ${GROUP_ID} --no-log-init --create-home ${USER_NAME}
+WORKDIR /home/${USER_NAME}
+USER ${USER_NAME}
 
 # Get ROS 2 code
 RUN	mkdir -p ros2_${ROS2DIST}/src && \
@@ -91,7 +96,7 @@ RUN	mkdir -p ros2_${ROS2DIST}/src && \
 # QNX SDP7.1 should be installed on system before creating an image
 # QNX SDP7.1 directory should be named qnx710
 # ~/qnx710 directory will have to be copied over to the build context directory
-COPY qnx710 /home/builder/qnx710
+COPY --chown=${USER_NAME}:${GROUP_NAME} qnx710 /home/${USER_NAME}/qnx710
 
 # Setup host for Cross-compiling for QNX
 RUN cd ros2_${ROS2DIST} && \
@@ -100,7 +105,7 @@ RUN cd ros2_${ROS2DIST} && \
 	rsync -haz /tmp/ros2/* . && \
 	rm -rf /tmp/ros2
 
-#Import QNX dependencies repositories
+# Import QNX dependency repositories
 RUN cd ros2_${ROS2DIST} && \
 	mkdir -p src/qnx_deps && \
 	vcs import src/qnx_deps < qnx_deps.repos
@@ -109,18 +114,15 @@ RUN cd ros2_${ROS2DIST} && \
 	./patch-pkgxml.py --path=src && \
 	./colcon-ignore.sh
 
-WORKDIR /home/builder
+WORKDIR /home/${USER_NAME}
 
-#change user
-RUN chown -R builder:builder /home/builder
-USER builder
 CMD /bin/bash
 
 # Welcome Message
-COPY .welcome-msg.txt /home/builder
-RUN echo "cat /home/builder/.welcome-msg.txt\n" >> /home/builder/.bashrc
+COPY --chown=${USER_NAME}:${GROUP_NAME} .welcome-msg.txt /home/${USER_NAME}
+RUN echo "cat /home/${USER_NAME}/.welcome-msg.txt\n" >> /home/${USER_NAME}/.bashrc
 
 # Setup environment variables
-RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/builder/.bashrc
-RUN echo ". /home/builder/qnx710/qnxsdp-env.sh" >> /home/builder/.bashrc
-RUN echo "echo \"\n\"" >> /home/builder/.bashrc
+RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/${USER_NAME}/.bashrc
+RUN echo ". /home/${USER_NAME}/qnx710/qnxsdp-env.sh" >> /home/${USER_NAME}/.bashrc
+RUN echo "echo \"\n\"" >> /home/${USER_NAME}/.bashrc

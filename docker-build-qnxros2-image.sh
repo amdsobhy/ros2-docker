@@ -10,4 +10,9 @@ if [ ! -d $PWD/qnx710 ]; then
 	exit 1
 fi
 
-docker build --build-arg ROS2DIST=${1} -t qnxros2_${1} .
+docker build -t qnxros2_${1} \
+  --build-arg ROS2DIST=${1} \
+  --build-arg USER_NAME=$(id --user --name) \
+  --build-arg GROUP_NAME=$(id --group --name) \
+  --build-arg USER_ID=$(id --user) \
+  --build-arg GROUP_ID=$(id --group) .
