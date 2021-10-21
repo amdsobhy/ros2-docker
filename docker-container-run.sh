@@ -6,5 +6,5 @@ if [ -z "$1" ]; then
 fi
 
 docker run -it \
-  -v ~/.qnx:/home/builder/.qnx \
+  -v $HOME/.qnx:$HOME/.qnx \
   qnxros2_$1:latest /bin/bash

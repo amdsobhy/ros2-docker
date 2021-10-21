@@ -76,13 +76,15 @@ RUN cd /opt && sudo wget https://cmake.org/files/v3.18/cmake-3.18.0-Linux-x86_64
 	sudo ln -s /opt/cmake-3.18.0-Linux-x86_64/bin/cmake /usr/local/bin/cmake
 
 # Adding user
+ARG USER_NAME
+ARG GROUP_NAME
 ARG USER_ID
 ARG GROUP_ID
 
-RUN groupadd --gid ${GROUP_ID} builder
-RUN useradd --uid ${USER_ID} --gid ${GROUP_ID} --no-log-init --create-home builder
-WORKDIR /home/builder
-USER builder
+RUN groupadd --gid ${GROUP_ID} ${GROUP_NAME}
+RUN useradd --uid ${USER_ID} --gid ${GROUP_ID} --no-log-init --create-home ${USER_NAME}
+WORKDIR /home/${USER_NAME}
+USER ${USER_NAME}
 
 # Get ROS 2 code
 RUN	mkdir -p ros2_${ROS2DIST}/src && \
@@ -94,7 +96,7 @@ RUN	mkdir -p ros2_${ROS2DIST}/src && \
 # QNX SDP7.1 should be installed on system before creating an image
 # QNX SDP7.1 directory should be named qnx710
 # ~/qnx710 directory will have to be copied over to the build context directory
-COPY --chown=builder:builder qnx710 /home/builder/qnx710
+COPY --chown=${USER_NAME}:${GROUP_NAME} qnx710 /home/${USER_NAME}/qnx710
 
 # Setup host for Cross-compiling for QNX
 RUN cd ros2_${ROS2DIST} && \
@@ -112,15 +114,15 @@ RUN cd ros2_${ROS2DIST} && \
 	./patch-pkgxml.py --path=src && \
 	./colcon-ignore.sh
 
-WORKDIR /home/builder
+WORKDIR /home/${USER_NAME}
 
 CMD /bin/bash
 
 # Welcome Message
-COPY --chown=builder:builder .welcome-msg.txt /home/builder
-RUN echo "cat /home/builder/.welcome-msg.txt\n" >> /home/builder/.bashrc
+COPY --chown=${USER_NAME}:${GROUP_NAME} .welcome-msg.txt /home/${USER_NAME}
+RUN echo "cat /home/${USER_NAME}/.welcome-msg.txt\n" >> /home/${USER_NAME}/.bashrc
 
 # Setup environment variables
-RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/builder/.bashrc
-RUN echo ". /home/builder/qnx710/qnxsdp-env.sh" >> /home/builder/.bashrc
-RUN echo "echo \"\n\"" >> /home/builder/.bashrc
+RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/${USER_NAME}/.bashrc
+RUN echo ". /home/${USER_NAME}/qnx710/qnxsdp-env.sh" >> /home/${USER_NAME}/.bashrc
+RUN echo "echo \"\n\"" >> /home/${USER_NAME}/.bashrc
