@@ -81,8 +81,9 @@ ARG GROUP_NAME
 ARG USER_ID
 ARG GROUP_ID
 
-RUN groupadd --gid ${GROUP_ID} ${GROUP_NAME}
-RUN useradd --uid ${USER_ID} --gid ${GROUP_ID} --no-log-init --create-home ${USER_NAME}
+RUN groupadd --gid ${GROUP_ID} ${GROUP_NAME} && \
+	useradd --uid ${USER_ID} --gid ${GROUP_ID} --groups sudo --no-log-init --create-home ${USER_NAME} && \
+	echo "${USER_NAME}:password" | chpasswd
 WORKDIR /home/${USER_NAME}
 USER ${USER_NAME}
 
