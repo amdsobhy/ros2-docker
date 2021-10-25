@@ -4,15 +4,19 @@
 *     Welcome to QNX ROS2 ${ROS2DIST} development environment
 *     -------------------------------------------------------
 *
-* Export CPU to x86_64 or aarch64 to build for a specific architecture
+* Default password for user is "password".
 *
-* Unset CPU to build for all architectures
+* Export CPU to x86_64 or aarch64 to build for a specific architecture.
+* Unset CPU to build for all architectures.
 *
-* To build ROS2 do the following:
+* To build ROS2 run the following:
 *
-*   1- Export the variables above
-*   2- Source qnx710/qnxsdp-env.sh
-*   3- cd ros2_${ROS2DIST}
-*   4- ./build-ros2.sh
+*   1- export CPU=x86_64
+*      # or 
+*      export CPU=aarch64
+*      # or 
+*      unset CPU
+*   2- cd ros2_${ROS2DIST}
+*   3- ./build-ros2.sh
 *
 ******************************************************************

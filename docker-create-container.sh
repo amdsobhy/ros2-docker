@@ -6,5 +6,11 @@ if [ -z "$1" ]; then
 fi
 
 docker run -it \
+  --net=host \
+  --privileged \
+  -v ~/.vimrc:$HOME/.vimrc \
+  -v ~/.ssh:$HOME/.ssh \
+  -v ~/.qnx:$HOME/.qnx \
+  -v ~/shared:$HOME/shared \
   -v $HOME/.qnx:$HOME/.qnx \
-  qnxros2_$1:latest /bin/bash
+  "qnxros2_$1:latest" /bin/bash

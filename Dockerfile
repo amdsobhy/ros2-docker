@@ -81,8 +81,9 @@ ARG GROUP_NAME
 ARG USER_ID
 ARG GROUP_ID
 
-RUN groupadd --gid ${GROUP_ID} ${GROUP_NAME}
-RUN useradd --uid ${USER_ID} --gid ${GROUP_ID} --no-log-init --create-home ${USER_NAME}
+RUN groupadd --gid ${GROUP_ID} ${GROUP_NAME} && \
+	useradd --uid ${USER_ID} --gid ${GROUP_ID} --groups sudo --no-log-init --create-home ${USER_NAME} && \
+	echo "${USER_NAME}:password" | chpasswd
 WORKDIR /home/${USER_NAME}
 USER ${USER_NAME}
 
@@ -114,9 +115,8 @@ RUN cd ros2_${ROS2DIST} && \
 	./patch-pkgxml.py --path=src && \
 	./colcon-ignore.sh
 
-WORKDIR /home/${USER_NAME}
-
-CMD /bin/bash
+# Clone empty ROS2 package workspace
+RUN git clone https://gitlab.com/qnx/ros2/dev_ws
 
 # Welcome Message
 COPY --chown=${USER_NAME}:${GROUP_NAME} .welcome-msg.txt /home/${USER_NAME}
@@ -126,3 +126,5 @@ RUN echo "cat /home/${USER_NAME}/.welcome-msg.txt\n" >> /home/${USER_NAME}/.bash
 RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/${USER_NAME}/.bashrc
 RUN echo ". /home/${USER_NAME}/qnx710/qnxsdp-env.sh" >> /home/${USER_NAME}/.bashrc
 RUN echo "echo \"\n\"" >> /home/${USER_NAME}/.bashrc
+
+CMD /bin/bash
