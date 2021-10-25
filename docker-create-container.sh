@@ -5,7 +5,7 @@ if [ -z "$1" ]; then
 	exit 1
 fi
 
-docker run -it -d \
+docker run -it \
   --net=host \
   --privileged \
   -v ~/.vimrc:$HOME/.vimrc \
