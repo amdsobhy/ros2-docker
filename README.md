@@ -20,7 +20,7 @@ For example, `[ROS2_Distro]` can be `foxy`.
 4- Create a container with the run script as follows.
 
 ```
-./docker-container-run.sh [ROS2_DISTRO]
+./docker-create-container.sh [ROS2_DISTRO]
 ```
 
 5- Follow the rest of the instructions displayed in the welcome message.
