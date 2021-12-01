@@ -1,4 +1,4 @@
-#Download base image ubuntu 18.04
+# Download base image ubuntu 18.04
 FROM ubuntu:20.04
 
 # LABEL about the custom image
@@ -119,12 +119,7 @@ RUN cd ros2_${ROS2DIST} && \
 RUN git clone https://gitlab.com/qnx/ros2/dev_ws
 
 # Welcome Message
-COPY --chown=${USER_NAME}:${GROUP_NAME} .welcome-msg.txt /home/${USER_NAME}
-RUN echo "cat /home/${USER_NAME}/.welcome-msg.txt\n" >> /home/${USER_NAME}/.bashrc
-
-# Setup environment variables
-RUN echo "echo \"\nQNX Environment variables are set to:\n\"" >> /home/${USER_NAME}/.bashrc
-RUN echo ". /home/${USER_NAME}/qnx710/qnxsdp-env.sh" >> /home/${USER_NAME}/.bashrc
-RUN echo "echo \"\n\"" >> /home/${USER_NAME}/.bashrc
+COPY --chown=${USER_NAME}:${GROUP_NAME} ".welcome.bash" "/home/${USER_NAME}"
+RUN echo "source /home/${USER_NAME}/.welcome.bash\n" >> "/home/${USER_NAME}/.bashrc"
 
 CMD /bin/bash
